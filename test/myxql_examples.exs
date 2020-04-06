@@ -1,4 +1,4 @@
-defmodule MyXQLExamples do
+defmodule MyXqlExamples do
   @moduledoc """
   The purpose of this files is just to collect all of the functionality of the
   MyXQL adapter, which we are using to model behaviour for EctoS3.
@@ -22,7 +22,7 @@ defmodule MyXQLExamples do
 
     # Clean database between tests
     Ecto.Adapters.SQL.query!(SqlRepo, "DROP TABLE IF EXISTS people")
-    Ecto.Adapters.SQL.query!(SqlRepo, "CREATE TABLE people (id VARCHAR(100) primary key, name VARCHAR(100), age integer)")
+    Ecto.Adapters.SQL.query!(SqlRepo, "CREATE TABLE people (id binary(16) primary key, name VARCHAR(100), age integer)")
 
     :ok
   end
@@ -117,4 +117,14 @@ defmodule MyXQLExamples do
     end
   end
 
+  describe "delete/2" do
+    test "delete using struct" do
+      struct = %Person{name: "tyler", age: 100}
+      assert {:ok, sql_struct} = SqlRepo.insert(struct)
+      assert {:ok, s3_struct} = S3Repo.insert(struct)
+
+      assert {:ok, %Person{}} = SqlRepo.delete(sql_struct)
+      assert {:ok, %Person{}} = S3Repo.delete(s3_struct)
+    end
+  end
 end

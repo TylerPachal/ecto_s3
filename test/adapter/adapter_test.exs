@@ -155,4 +155,18 @@ defmodule EctoS3.AdapterTest do
       end
     end
   end
+
+  describe "delete" do
+    setup do
+      struct = %Person{id: 900, name: "tyler", age: 0}
+      S3Repo.insert(struct)
+
+      :ok
+    end
+
+    test "delete using struct" do
+      assert {:ok, id} = S3Repo.delete(%Person{id: 900})
+      assert_s3_not_exists "/people/900.json"
+    end
+  end
 end

@@ -22,5 +22,6 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 ecto_s3-*.tar
 
-# Ignore the MySql docker stuff
+# Ignore the Docker volumes
 /_mysql
+/_s3

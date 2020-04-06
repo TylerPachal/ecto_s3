@@ -24,4 +24,18 @@ defmodule S3Helpers do
       end
     end
   end
+
+  defmacro assert_s3_not_exists(path, options \\ []) do
+    bucket = Keyword.get(options, :bucket) || "s3_ecto_test"
+
+    quote do
+      case ExAws.S3.get_object(unquote(bucket), unquote(path)) |> ExAws.request() do
+        {:error, {:http_error, 404, _}} ->
+          assert true
+
+        {:ok, %{status_code: 200}} ->
+          flunk("#{unquote(path)} exists in #{unquote(bucket)}")
+      end
+    end
+  end
 end

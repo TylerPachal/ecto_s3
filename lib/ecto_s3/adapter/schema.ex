@@ -71,8 +71,18 @@ defmodule EctoS3.Adapter.Schema do
   end
 
   @impl true
-  def delete(adapter_meta, schema_meta, filters, options) do
-    {:ok, []}
+  def delete(adapter_meta, schema_meta, filters, _options) do
+    %{bucket: bucket, format: format} = adapter_meta
+    %{source: source, prefix: _prefix} = schema_meta
+
+    key = key(schema_meta, filters)
+    path = "/" <> Enum.join([source, key], "/") <> extension(format)
+
+    request = ExAws.S3.delete_object(bucket, path)
+
+    case ExAws.request(request) do
+      {:ok, %{status_code: 204}} -> {:ok, []}
+    end
   end
 
   defp key(schema_meta, fields) do
