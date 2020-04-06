@@ -1,14 +1,29 @@
 defmodule EctoS3.Adapter.Schema do
-
   @behaviour Ecto.Adapter.Schema
+
+  alias EctoS3.UnsupportedOperationError
+
 
   @impl true
   def autogenerate(:id), do: :erlang.unique_integer()
   def autogenerate(:binary_id), do: Ecto.UUID.generate()
 
   @impl true
-  def insert_all(_adapter_meta, _schema_meta, _header, _list, _on_conflict, _returning, _options) do
-    raise "insert_all not supported"
+  def insert_all(adapter_meta, _schema_meta, _header, _list, _on_conflict, _returning, _options) do
+    %{repo: repo} = adapter_meta
+
+    module = Module.split(repo) |> List.last()
+
+    raise UnsupportedOperationError, message: """
+      #{module}.insert_all/3 is not supported.
+
+      S3 has basic read, write, and delete operations, but no bulk write
+      operation.  Because of this the #{module}.insert_all/2 function is not
+      implemented and should be replaced by multiple calls to
+      #{module}.insert/1:
+
+        Enum.map(values, &#{module}.insert/1)
+      """
   end
 
   @impl true
@@ -40,10 +55,10 @@ defmodule EctoS3.Adapter.Schema do
     module = Module.split(repo) |> List.last()
     schema = Module.split(schema) |> List.last()
 
-    raise """
+    raise UnsupportedOperationError, message: """
       #{module}.update/2 is not supported.
 
-      Since S3 only has basic write, read, and delete operations, there is no
+      Since S3 only has basic read, write, and delete operations, there is no
       distinction between updating an existing file and writing a new file.
       Because of this the #{module}.update/2 function is not implemented and
       should be replaced by a combination of #{module}.get/2 and

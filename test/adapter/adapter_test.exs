@@ -28,8 +28,16 @@ defmodule EctoS3.AdapterTest do
         %Person{id: 9}
         |> Ecto.Changeset.cast(%{"name" => "tyler", "age" => 100}, [:id, :name])
 
-      assert_raise RuntimeError, ~r(S3Repo.update/2 is not supported),  fn ->
+      assert_raise EctoS3.UnsupportedOperationError, ~r(S3Repo.update/2 is not supported), fn ->
         S3Repo.update(changeset)
+      end
+    end
+  end
+
+  describe "insert_all" do
+    test "raises error" do
+      assert_raise EctoS3.UnsupportedOperationError, ~r(S3Repo.insert_all/3 is not supported), fn ->
+        S3Repo.insert_all(Person, [[name: "foo", age: 0]])
       end
     end
   end
