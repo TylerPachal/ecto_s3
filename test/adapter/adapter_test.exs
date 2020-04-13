@@ -1,7 +1,7 @@
 defmodule EctoS3.AdapterTest do
   use ExUnit.Case, async: false
   import S3Helpers
-  alias EctoS3.Support.{SqlRepo, S3Repo}
+  alias EctoS3.Support.S3Repo
 
   setup_all do
     {:ok, _pid} = S3Repo.start_link()
@@ -38,6 +38,14 @@ defmodule EctoS3.AdapterTest do
     test "raises error" do
       assert_raise EctoS3.UnsupportedOperationError, ~r(S3Repo.insert_all/3 is not supported), fn ->
         S3Repo.insert_all(Person, [[name: "foo", age: 0]])
+      end
+    end
+  end
+
+  describe "delete_all" do
+    test "raises error" do
+      assert_raise EctoS3.UnsupportedOperationError, fn ->
+        S3Repo.delete_all(Person)
       end
     end
   end
@@ -159,14 +167,27 @@ defmodule EctoS3.AdapterTest do
   describe "delete" do
     setup do
       struct = %Person{id: 900, name: "tyler", age: 0}
-      S3Repo.insert(struct)
+      S3Repo.insert!(struct)
 
-      :ok
+      [struct: struct]
     end
 
-    test "delete using struct" do
-      assert {:ok, id} = S3Repo.delete(%Person{id: 900})
+    test "delete using struct", %{struct: struct} do
+      assert {:ok, id} = S3Repo.delete(struct)
       assert_s3_not_exists "/people/900.json"
+    end
+
+    test "delete using changeset", %{struct: struct} do
+      changeset = Ecto.Changeset.change(struct)
+      assert {:ok, id} = S3Repo.delete(changeset)
+      assert_s3_not_exists "/people/900.json"
+    end
+
+    test "deleting something which has no primary key value raises an error" do
+      struct = %Person{name: "tyler", age: 0}
+      assert_raise Ecto.NoPrimaryKeyValueError, fn ->
+        S3Repo.delete(struct)
+      end
     end
   end
 end

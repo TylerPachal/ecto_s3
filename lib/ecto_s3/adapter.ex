@@ -1,12 +1,13 @@
 defmodule EctoS3.Adapter do
   @moduledoc """
-  Used as an Adapter in Repo modueles, which uses an S3 bucket as the
-  "database" and one folder per schema.  Each file will be named based on the
-  value of the primary key of the schema.
+  EctoS3.Adapater is used in application Repo modules.
 
-  S3 does not support bulk writes, updating, or querying, so the only
-  operations that are supported by EctoS3 are insert/get/delete for single
-  resources
+  An S3 bucket is used at the "database" and folders are used for schemas.
+  Each file will be named based on the value of the primary key of the schema.
+
+  S3 has basic read, write, and delete operations, but does not support bulk
+  writes, updating, deleting, or querying.  Thus, EctoS3 only supports read,
+  write, and delete operations on single resources.
 
   To use EctoS3 in your application, define a repo like the following:
 
@@ -24,6 +25,8 @@ defmodule EctoS3.Adapter do
 
   @impl true
   def __before_compile__(_env) do
+    # TODO: Move Queryable stuff into a macro here so we can improve the error
+    # messages.
     :ok
   end
 
@@ -91,5 +94,14 @@ defmodule EctoS3.Adapter do
 
 
   ## ----- Ecto.Adapter.Queryable -----
-  # @behaviour Ecto.Adapter.Queryable
+  @behaviour Ecto.Adapter.Queryable
+
+  @impl Ecto.Adapter.Queryable
+  defdelegate prepare(atom, query), to: EctoS3.Adapter.Queryable
+
+  @impl Ecto.Adapter.Queryable
+  defdelegate execute(adapter_meta, query_meta, query_cache, params, options), to: EctoS3.Adapter.Queryable
+
+  @impl Ecto.Adapter.Queryable
+  defdelegate stream(adapter_meta, query_meta, query_cache, params, options), to: EctoS3.Adapter.Queryable
 end

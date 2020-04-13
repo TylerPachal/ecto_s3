@@ -3,7 +3,7 @@ ExUnit.start()
 defmodule S3Helpers do
 
   def reset_buckets() do
-    buckets = ["s3_ecto_test", "s3_ecto_test_2"]
+    buckets = ["s3_ecto_test"]
 
     Enum.each(buckets, fn bucket ->
       ExAws.S3.delete_bucket(bucket) |> ExAws.request()

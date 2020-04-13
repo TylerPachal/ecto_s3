@@ -126,5 +126,40 @@ defmodule MyXqlExamples do
       assert {:ok, %Person{}} = SqlRepo.delete(sql_struct)
       assert {:ok, %Person{}} = S3Repo.delete(s3_struct)
     end
+
+    test "delete using changeset" do
+      struct = %Person{name: "tyler", age: 100}
+      assert {:ok, sql_struct} = SqlRepo.insert(struct)
+      assert {:ok, s3_struct} = S3Repo.insert(struct)
+
+      sql_changeset = Ecto.Changeset.change(sql_struct)
+      s3_changeset = Ecto.Changeset.change(s3_struct)
+
+      SqlRepo.delete(sql_changeset)
+      S3Repo.delete(s3_changeset)
+    end
+
+    test "delete something which is not present" do
+      struct = %Person{id: Ecto.UUID.generate()}
+      assert_raise Ecto.StaleEntryError, fn ->
+        SqlRepo.delete(struct)
+      end
+
+      # The S3 Delete operation is idempotent and never seems to fail (even if
+      # there is nothing to delete).
+      # assert_raise Ecto.StaleEntryError, fn -> S3Repo.delete(struct) end
+    end
+
+    test "delete something that has no primary key value" do
+      struct = %Person{name: "tyler", age: 100}
+
+      assert_raise Ecto.NoPrimaryKeyValueError, fn ->
+        SqlRepo.delete(struct)
+      end
+
+      assert_raise Ecto.NoPrimaryKeyValueError, fn ->
+        S3Repo.delete(struct)
+      end
+    end
   end
 end

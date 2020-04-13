@@ -3,7 +3,6 @@ defmodule EctoS3.Adapter.Schema do
 
   alias EctoS3.UnsupportedOperationError
 
-
   @impl true
   def autogenerate(:id), do: :erlang.unique_integer()
   def autogenerate(:binary_id), do: Ecto.UUID.generate()
@@ -80,9 +79,10 @@ defmodule EctoS3.Adapter.Schema do
 
     request = ExAws.S3.delete_object(bucket, path)
 
-    case ExAws.request(request) do
-      {:ok, %{status_code: 204}} -> {:ok, []}
-    end
+    # ExAws only ever returns 204s, regardless of if there was something to
+    # delete or not.
+    {:ok, %{status_code: 204}} = ExAws.request(request)
+    {:ok, []}
   end
 
   defp key(schema_meta, fields) do
