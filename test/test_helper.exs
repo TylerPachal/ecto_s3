@@ -11,6 +11,13 @@ defmodule S3Helpers do
     end)
   end
 
+  def write_s3_file(path, payload, options \\ []) do
+    bucket = Keyword.get(options, :bucket) || "s3_ecto_test"
+
+    ExAws.S3.put_object(bucket, path, payload)
+    |> ExAws.request!()
+  end
+
   defmacro assert_s3_exists(path, options \\ []) do
     bucket = Keyword.get(options, :bucket) || "s3_ecto_test"
 

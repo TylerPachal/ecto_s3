@@ -209,4 +209,17 @@ defmodule EctoS3.AdapterTest do
       end
     end
   end
+
+  describe "get" do
+    test "retrieves by ID" do
+      struct = %Person{id: 444, name: "tyler", age: nil}
+      payload = Poison.encode!(struct)
+      write_s3_file("/people/444.json", payload)
+
+      assert struct == S3Repo.get(Person, 444)
+    end
+  end
+
+  describe "get_by" do
+  end
 end
