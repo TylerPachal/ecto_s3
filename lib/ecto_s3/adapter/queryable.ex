@@ -1,27 +1,13 @@
 defmodule EctoS3.Adapter.Queryable do
+  @moduledoc false
+
   @behaviour Ecto.Adapter.Queryable
 
-  alias EctoS3.UnsupportedOperationError
+  alias EctoS3.{ContentType, Path, UnsupportedOperationError}
 
   @impl true
   def prepare(:all, query) do
     {:nocache, query}
-  end
-
-  def prepare(:all, %Ecto.Query{from: %{source: {_source_schema, source_module}}} = q) do
-    module = Module.split(source_module) |> List.last()
-
-    IO.inspect(q, structs: false)
-
-    # raise UnsupportedOperationError, message: """
-    #   MyRepo.all(#{module}) is not supported.
-
-    #   S3 has basic read, write, and delete operations, but no bulk get
-    #   operation.  Because of this the MyRepo.all/2 function is not implemented
-    #   and should be replaced by multiple calls to MyRepo.get/3:
-
-    #     Enum.map(ids, &MyRepo.get(#{module}, &1))
-    #   """
   end
 
   @impl true
@@ -60,35 +46,39 @@ defmodule EctoS3.Adapter.Queryable do
   end
 
   @impl true
-  def execute(adapter_meta, %{select: %{from: from}}, {:nocache, _query}, [id], _options) do
+  def execute(adapter_meta, %{select: %{from: from}}, {:nocache, query}, [id], _options) do
     %{bucket: bucket, format: format, repo: repo} = adapter_meta
-    {:any, {:source, {source, schema_module}, nil, [id: :integer, name: :string, age: :integer]}} = from
+    {:any, {:source, {_source, schema_module}, nil, fields}} = from
 
-    # TODO: Inspect the schema to handle composite keys and stuff
-    # TODO: Use the format from the adapter_meta for the extension
-    extension = ".json"
-    path = "/" <> Enum.join([source, id], "/") <> extension
+    path = Path.absolute(schema_module, id, format)
+    request = ExAws.S3.get_object(bucket, path)
 
-    # TODO: Use format here for decoding
-    # TODO: Handle error cases
-    case ExAws.S3.get_object(bucket, path) |> ExAws.request()  do
+    case ExAws.request(request)  do
       {:ok, %{body: body}} ->
-        # TODO: Do this conversion
-        Poison.decode!(body)
-        {1, [[444, "tyler", nil]]}
+        {1, [ContentType.decode(format, body, fields)]}
+      {:error, {:http_error, 404, _body}} ->
+        {0, []}
     end
   end
 
   def execute(_adapter_meta, _query_meta, _query_cache, _params, _options) do
     raise UnsupportedOperationError, message: """
-    EctoS3 does not support Ecto's Queryable operations.
-    """
+      EctoS3 does not support Ecto's Queryable operations
+
+      S3 has basic read, write, and delete operations, but no way to construct
+      complex queries.
+
+      Because of this the only query operation that is supported is the
+      MyRepo.get/2 function, which fetches by the primary key:
+
+        MyRepo.get(MyModule, id)
+      """
   end
 
   @impl true
   def stream(_adapter_meta, _query_meta, _query_cache, _params, _options) do
     raise UnsupportedOperationError, message: """
-    EctoS3 does not support Ecto's Queryable operations.
+    EctoS3 does not support Ecto's Stream operations
     """
   end
 end

@@ -1,6 +1,7 @@
 defmodule EctoS3.AdapterTest do
   use ExUnit.Case, async: false
   import S3Helpers
+  import Ecto.Query
   alias EctoS3.Support.S3Repo
 
   setup_all do
@@ -19,34 +20,6 @@ defmodule EctoS3.AdapterTest do
     schema "people" do
       field :name, :string
       field :age, :integer
-    end
-  end
-
-  describe "update" do
-    test "raises error" do
-      changeset =
-        %Person{id: 9}
-        |> Ecto.Changeset.cast(%{"name" => "tyler", "age" => 100}, [:id, :name])
-
-      assert_raise EctoS3.UnsupportedOperationError, ~r(S3Repo.update/2 is not supported), fn ->
-        S3Repo.update(changeset)
-      end
-    end
-  end
-
-  describe "insert_all" do
-    test "raises error" do
-      assert_raise EctoS3.UnsupportedOperationError, ~r(S3Repo.insert_all/3 is not supported), fn ->
-        S3Repo.insert_all(Person, [[name: "foo", age: 0]])
-      end
-    end
-  end
-
-  describe "delete_all" do
-    test "raises error" do
-      assert_raise EctoS3.UnsupportedOperationError, fn ->
-        S3Repo.delete_all(Person)
-      end
     end
   end
 
@@ -214,12 +187,77 @@ defmodule EctoS3.AdapterTest do
     test "retrieves by ID" do
       struct = %Person{id: 444, name: "tyler", age: nil}
       payload = Poison.encode!(struct)
-      write_s3_file("/people/444.json", payload)
+      write_s3_file("/people/#{struct.id}.json", payload)
 
-      assert struct == S3Repo.get(Person, 444)
+      assert %Person{id: 444, name: "tyler", age: nil} = S3Repo.get(Person, struct.id)
+    end
+
+    test "returns nil for non-existant resource" do
+      assert nil == S3Repo.get(Person, 404)
     end
   end
 
   describe "get_by" do
+    test "works for the primary key field" do
+      struct = %Person{id: 54, name: "fred", age: nil}
+      payload = Poison.encode!(struct)
+      write_s3_file("/people/#{struct.id}.json", payload)
+
+      assert %Person{id: 54, name: "fred", age: nil} = S3Repo.get_by(Person, id: struct.id)
+    end
+
+    test "raises error for non-primary key field" do
+      # TODO: There doesn't seem like a great way to check for this, maybe we will just ignore it.
+    end
+  end
+
+  describe "one" do
+    test "raises error" do
+      assert_raise EctoS3.UnsupportedOperationError, fn ->
+        query = from p in Person, select: p.name
+        S3Repo.one(query)
+      end
+    end
+  end
+
+  describe "all" do
+    test "raises error" do
+      assert_raise EctoS3.UnsupportedOperationError, fn ->
+        S3Repo.all(Person)
+      end
+
+      assert_raise EctoS3.UnsupportedOperationError, fn ->
+        query = from p in Person, select: p.name
+        S3Repo.all(query)
+      end
+    end
+  end
+
+  describe "update" do
+    test "raises error" do
+      changeset =
+        %Person{id: 9}
+        |> Ecto.Changeset.cast(%{"name" => "tyler", "age" => 100}, [:id, :name])
+
+      assert_raise EctoS3.UnsupportedOperationError, ~r(S3Repo.update/2 is not supported), fn ->
+        S3Repo.update(changeset)
+      end
+    end
+  end
+
+  describe "insert_all" do
+    test "raises error" do
+      assert_raise EctoS3.UnsupportedOperationError, ~r(S3Repo.insert_all/3 is not supported), fn ->
+        S3Repo.insert_all(Person, [[name: "foo", age: 0]])
+      end
+    end
+  end
+
+  describe "delete_all" do
+    test "raises error" do
+      assert_raise EctoS3.UnsupportedOperationError, fn ->
+        S3Repo.delete_all(Person)
+      end
+    end
   end
 end

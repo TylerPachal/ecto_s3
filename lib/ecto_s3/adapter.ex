@@ -6,8 +6,9 @@ defmodule EctoS3.Adapter do
   Each file will be named based on the value of the primary key of the schema.
 
   S3 has basic read, write, and delete operations, but does not support bulk
-  writes, updating, deleting, or querying.  Thus, EctoS3 only supports read,
-  write, and delete operations on single resources.
+  writes, updating, deleting, or querying by anything other than the primary
+  key.  Thus, EctoS3 only supports read, write, and delete operations on single
+  resources.
 
   Additionally, many of the "usual" options for the insert and delete functions
   are not supported.  For example, S3 does not provide a mechanism for conflict
