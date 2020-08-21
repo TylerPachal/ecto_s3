@@ -91,52 +91,6 @@ defmodule MyXqlExamples do
       # TODO: Should we support this?  For MySQL it looks like it changes the
       # DB.  Would we make it change the bucket?  Or maybe the folder?
     end
-
-    test ":on_conflict - default (:raise)" do
-      options = []
-
-
-    end
-
-    test ":on_conflict - :raise" do
-
-    end
-
-    test ":on_conflict - :nothing" do
-
-    end
-
-    test ":on_conflict - :replace_all" do
-
-    end
-
-    test ":on_conflict - {:replace_all_except, fields}" do
-
-    end
-
-    test ":on_conflict - {:replace, fields}" do
-
-    end
-
-    test ":on_conflict - keyword list of instructions" do
-
-    end
-
-    test ":on_conflict - Ecto.Query" do
-
-    end
-
-    test ":conflict_target" do
-
-    end
-
-    test ":stale_error_field" do
-
-    end
-
-    test ":stale_error_message" do
-
-    end
   end
 
   describe "delete/2" do

@@ -9,6 +9,10 @@ defmodule EctoS3.Adapter do
   writes, updating, deleting, or querying.  Thus, EctoS3 only supports read,
   write, and delete operations on single resources.
 
+  Additionally, many of the "usual" options for the insert and delete functions
+  are not supported.  For example, S3 does not provide a mechanism for conflict
+  detection so the `:on_conflict` option is not supported.
+
   To use EctoS3 in your application, define a repo like the following:
 
       defmodule MyApp.Repo do
