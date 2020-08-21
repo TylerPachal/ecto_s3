@@ -162,6 +162,25 @@ defmodule EctoS3.AdapterTest do
         S3Repo.insert(struct)
       end
     end
+
+    test "raises error when :on_conflict option is set to something other than the default of :raise or :nothing (even though we ignore any value)" do
+      # Doesn't raise an error in this case
+      S3Repo.insert(%Person{id: 9}, on_conflict: :nothing)
+
+      assert_raise EctoS3.UnsupportedOperationError, ~r(allows the :nothing value), fn ->
+        S3Repo.insert(%Person{id: 9}, on_conflict: :replace_all)
+      end
+
+      assert_raise EctoS3.UnsupportedOperationError, fn ->
+        S3Repo.insert(%Person{id: 9}, on_conflict: {:replace_all_except, [:id, :name]})
+      end
+    end
+
+    test "raises error when :stale_error_field is set" do
+      assert_raise EctoS3.UnsupportedOperationError, ~r(not support the :stale_error_field option), fn ->
+        S3Repo.insert(%Person{id: 800}, stale_error_field: :name)
+      end
+    end
   end
 
   describe "delete" do
