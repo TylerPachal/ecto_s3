@@ -6,7 +6,7 @@ defmodule EctoS3.Adapter.Schema do
   alias EctoS3.{ContentType, Path, UnsupportedOperationError}
 
   @impl true
-  def autogenerate(:id), do: :erlang.unique_integer()
+  def autogenerate(:id), do: :erlang.unique_integer([:positive])
   def autogenerate(:binary_id), do: Ecto.UUID.generate()
 
   @impl true

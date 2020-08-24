@@ -154,6 +154,19 @@ defmodule EctoS3.AdapterTest do
         S3Repo.insert(%Person{id: 800}, stale_error_field: :name)
       end
     end
+
+    defmodule Schema_06 do
+      use Ecto.Schema
+      schema "schema_06_name" do
+        field :count, :integer
+      end
+    end
+
+    test "uses the default id field when one is not specified in the schema" do
+      {:ok, %Schema_06{id: id}} = S3Repo.insert(%Schema_06{count: 11})
+      assert id > 0
+      assert_s3_exists "/schema_06_name/#{id}.json"
+    end
   end
 
   describe "delete" do

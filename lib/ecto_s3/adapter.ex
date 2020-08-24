@@ -5,10 +5,9 @@ defmodule EctoS3.Adapter do
   An S3 bucket is used at the "database" and folders are used for schemas.
   Each file will be named based on the value of the primary key of the schema.
 
-  S3 has basic read, write, and delete operations, but does not support bulk
-  writes, updating, deleting, or querying by anything other than the primary
-  key.  Thus, EctoS3 only supports read, write, and delete operations on single
-  resources.
+  S3 has basic read, write, and delete operations, but has no mechanism for
+  bulk operations, complex queries, conflict detection, or streaming.  Thus,
+  EctoS3 only supports read, write, and delete operations on single resources.
 
   Additionally, many of the "usual" options for the insert and delete functions
   are not supported.  For example, S3 does not provide a mechanism for conflict
@@ -22,6 +21,28 @@ defmodule EctoS3.Adapter do
           otp_app: :my_app
       end
 
+  Then assuming you have a schema something like this:
+
+      defmodule Person do
+        use Ecto.Schema
+        schema "people" do
+          field :name, :string
+          field :age, :integer
+        end
+      end
+
+  You can use the Repo to perform operations like this:
+
+      struct = %Person{id: 1, name: "tyler", age: 100}
+
+      # Insert: The resulting file in S3 will be /people/1.json
+      {:ok, _peson} = Repo.insert(struct)
+
+      # Get by ID
+      person = Repo.get(Person, struct.id)
+
+      # Delete
+      {:ok, _id} = Repo.delete(person)
   """
 
   require Logger
@@ -30,8 +51,6 @@ defmodule EctoS3.Adapter do
 
   @impl true
   def __before_compile__(_env) do
-    # TODO: Move Queryable stuff into a macro here so we can improve the error
-    # messages.
     :ok
   end
 

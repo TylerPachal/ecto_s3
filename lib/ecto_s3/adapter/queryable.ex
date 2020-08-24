@@ -46,8 +46,8 @@ defmodule EctoS3.Adapter.Queryable do
   end
 
   @impl true
-  def execute(adapter_meta, %{select: %{from: from}}, {:nocache, query}, [id], _options) do
-    %{bucket: bucket, format: format, repo: repo} = adapter_meta
+  def execute(adapter_meta, %{select: %{from: from}}, {:nocache, _query}, [id], _options) do
+    %{bucket: bucket, format: format, repo: _repo} = adapter_meta
     {:any, {:source, {_source, schema_module}, nil, fields}} = from
 
     path = Path.absolute(schema_module, id, format)
