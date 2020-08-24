@@ -205,6 +205,13 @@ defmodule EctoS3.AdapterTest do
       assert %Person{id: 444, name: "tyler", age: nil} = S3Repo.get(Person, struct.id)
     end
 
+    # No use case for this right now
+    # test "populates ID from filename if not present in payload" do
+    #   payload = ~s({"name": "tyler"})
+    #   write_s3_file("/people/100.json", payload)
+    #   assert %Person{id: 100, name: "tyler", age: nil} = S3Repo.get(Person, 100)
+    # end
+
     test "returns nil for non-existant resource" do
       assert nil == S3Repo.get(Person, 404)
     end
