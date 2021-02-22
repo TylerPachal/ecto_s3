@@ -74,3 +74,11 @@ person = Repo.get(Person, struct.id)
 1) Run `docker-compose up` to bring up the external test dependencies
 
 2) Run `MIX_ENV=test mix ecto.create` to create the test Sql database.  This is used for some of the property-based tests.
+
+## TODO
+
+There a list of things I need before I can use this in production.
+
+- Custom paths for schemas.  Having a simple `/person/:id.json` is not sufficient for most of my usecases.  I need to often include extra information in the path including an `:account_id` or `:date`.  There should be a way to express a custom path format so other fields from the schema can be included in the path.
+
+- Migrations.  We should support some sort of migration mechanism that would loop over all S3 files and apply a transformation to the data.  
