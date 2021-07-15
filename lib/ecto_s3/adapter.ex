@@ -60,6 +60,11 @@ defmodule EctoS3.Adapter do
   end
 
   @impl true
+  def checked_out?(_adapter_meta) do
+    false
+  end
+
+  @impl true
   def dumpers(_, type), do: [type]
 
   @impl true
@@ -105,7 +110,7 @@ defmodule EctoS3.Adapter do
   defdelegate autogenerate(field_type), to: EctoS3.Adapter.Schema
 
   @impl Ecto.Adapter.Schema
-  defdelegate insert_all(adapter_meta, schema_meta, header, list, on_conflict, returning, options), to: EctoS3.Adapter.Schema
+  defdelegate insert_all(adapter_meta, schema_meta, header, list, on_conflict, returning, placeholders, options), to: EctoS3.Adapter.Schema
 
   @impl Ecto.Adapter.Schema
   defdelegate insert(adapter_meta, schema_meta, fields, on_conflict, returning, options), to: EctoS3.Adapter.Schema

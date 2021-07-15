@@ -10,7 +10,7 @@ defmodule EctoS3.Adapter.Schema do
   def autogenerate(:binary_id), do: Ecto.UUID.generate()
 
   @impl true
-  def insert_all(adapter_meta, _schema_meta, _header, _list, _on_conflict, _returning, _options) do
+  def insert_all(adapter_meta, _schema_meta, _header, _list, _on_conflict, _returning, _placeholders, _options) do
     %{repo: repo} = adapter_meta
 
     module = Module.split(repo) |> List.last()

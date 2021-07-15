@@ -12,11 +12,11 @@ defmodule EctoS3.ContentType do
   def encode(:json, fields) do
     fields
     |> Map.new()
-    |> Poison.encode!()
+    |> Jason.encode!()
   end
 
   def decode(:json, body, fields) do
-    decoded = Poison.decode!(body)
+    decoded = Jason.decode!(body)
     Enum.map(fields, fn {field, _type} ->
       Map.get(decoded, to_string(field))
     end)
