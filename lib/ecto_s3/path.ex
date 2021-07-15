@@ -3,20 +3,27 @@ defmodule EctoS3.Path do
 
   alias EctoS3.ContentType
 
+  # The prefix can be a list, or a single value.  Normalize the input to a list.
+  def absolute(schema, fields, format, prefix) when not is_list(prefix) do
+    prefix = List.wrap(prefix)
+    absolute(schema, fields, format, prefix)
+  end
+
   # Dealing with a struct (via EctoS3.Adapter.Schema)
-  def absolute(schema, fields, format) when is_list(fields) do
+  def absolute(schema, fields, format, prefix) when is_list(fields) do
     key = key(schema, fields)
-    make_path(schema, key, format)
+    make_path(schema, key, format, prefix)
   end
 
   # Dealing with a single ID (via EctoS3.Adapter.Queryable)
-  def absolute(schema, id, format) do
-    make_path(schema, id, format)
+  def absolute(schema, id, format, prefix) do
+    make_path(schema, id, format, prefix)
   end
 
-  defp make_path(schema, key, format) do
+  defp make_path(schema, key, format, prefix) do
     source = schema.__schema__(:source)
-    "/" <> Enum.join([source, key], "/") <> ContentType.extension(format)
+    elements = prefix ++ [source, key]
+    "/" <> Enum.join(elements, "/") <> ContentType.extension(format)
   end
 
   defp key(schema, fields) do

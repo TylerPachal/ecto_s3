@@ -21,6 +21,18 @@ defmodule EctoS3.AdapterTest do
       assert_s3_exists "/people/1.json"
     end
 
+    test "the :path_prefix option prefixes the automatically-generated part of the path" do
+      struct = %Person{id: 1, name: "tyler", age: 100}
+
+      # Value as a list
+      S3Repo.insert(struct, [path_prefix: ["accounts", 19]])
+      assert_s3_exists "/accounts/19/people/1.json"
+
+      # Value as a single string
+      S3Repo.insert(struct, [path_prefix: "my_prefix"])
+      assert_s3_exists "/accounts/19/people/1.json"
+    end
+
     defmodule Schema_01 do
       use Ecto.Schema
       @primary_key {:custom_id, :string, []}

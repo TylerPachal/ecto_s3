@@ -46,11 +46,11 @@ defmodule EctoS3.Adapter.Queryable do
   end
 
   @impl true
-  def execute(adapter_meta, %{select: %{from: from}}, {:nocache, _query}, [id], _options) do
+  def execute(adapter_meta, %{select: %{from: from}}, {:nocache, _query}, [id], options) do
     %{bucket: bucket, format: format, repo: _repo} = adapter_meta
     {:any, {:source, {_source, schema_module}, nil, fields}} = from
 
-    path = Path.absolute(schema_module, id, format)
+    path = Path.absolute(schema_module, id, format, options[:path_prefix])
     request = ExAws.S3.get_object(bucket, path)
 
     case ExAws.request(request)  do

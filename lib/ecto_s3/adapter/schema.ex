@@ -53,7 +53,7 @@ defmodule EctoS3.Adapter.Schema do
       """
     end
 
-    path = Path.absolute(schema_module, fields, format)
+    path = Path.absolute(schema_module, fields, format, options[:path_prefix])
     payload = ContentType.encode(format, fields)
     header = ContentType.header(format)
 
@@ -94,7 +94,7 @@ defmodule EctoS3.Adapter.Schema do
     module = Module.split(repo) |> List.last()
     check_stale_error_field!(options, "#{module}.delete/2")
 
-    path = Path.absolute(schema_module, filters, format)
+    path = Path.absolute(schema_module, filters, format, options[:path_prefix])
     request = ExAws.S3.delete_object(bucket, path)
 
     # ExAws only ever returns 204s, regardless of if there was something to

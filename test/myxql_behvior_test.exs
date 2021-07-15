@@ -88,8 +88,8 @@ defmodule MyXqlExamples do
     end
 
     test ":prefix" do
-      # TODO: Should we support this?  For MySQL it looks like it changes the
-      # DB.  Would we make it change the bucket?  Or maybe the folder?
+      # Inentionally not making this the same as the MyXQL version - using a :path_prefix instead
+      # for similar but differing behavior.
     end
   end
 
