@@ -2,7 +2,7 @@ defmodule EctoS3.AdapterTest do
   use ExUnit.Case, async: false
   import S3Helpers
   import Ecto.Query
-  alias EctoS3.Support.S3Repo
+  alias EctoS3.Support.{Person, S3Repo}
 
   setup_all do
     {:ok, _pid} = S3Repo.start_link()
@@ -12,15 +12,6 @@ defmodule EctoS3.AdapterTest do
   setup do
     reset_buckets()
     :ok
-  end
-
-  defmodule Person do
-    use Ecto.Schema
-    @primary_key {:id, :integer, autogenerate: false}
-    schema "people" do
-      field :name, :string
-      field :age, :integer
-    end
   end
 
   describe "insert" do
@@ -178,13 +169,13 @@ defmodule EctoS3.AdapterTest do
     end
 
     test "delete using struct", %{struct: struct} do
-      assert {:ok, id} = S3Repo.delete(struct)
+      assert {:ok, _} = S3Repo.delete(struct)
       assert_s3_not_exists "/people/900.json"
     end
 
     test "delete using changeset", %{struct: struct} do
       changeset = Ecto.Changeset.change(struct)
-      assert {:ok, id} = S3Repo.delete(changeset)
+      assert {:ok, _} = S3Repo.delete(changeset)
       assert_s3_not_exists "/people/900.json"
     end
 
@@ -199,7 +190,7 @@ defmodule EctoS3.AdapterTest do
   describe "get" do
     test "retrieves by ID" do
       struct = %Person{id: 444, name: "tyler", age: nil}
-      payload = Poison.encode!(struct)
+      payload = Jason.encode!(struct)
       write_s3_file("/people/#{struct.id}.json", payload)
 
       assert %Person{id: 444, name: "tyler", age: nil} = S3Repo.get(Person, struct.id)
@@ -220,7 +211,7 @@ defmodule EctoS3.AdapterTest do
   describe "get_by" do
     test "works for the primary key field" do
       struct = %Person{id: 54, name: "fred", age: nil}
-      payload = Poison.encode!(struct)
+      payload = Jason.encode!(struct)
       write_s3_file("/people/#{struct.id}.json", payload)
 
       assert %Person{id: 54, name: "fred", age: nil} = S3Repo.get_by(Person, id: struct.id)
