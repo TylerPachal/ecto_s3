@@ -3,7 +3,7 @@ defmodule EctoS3.Adapter.Queryable do
 
   @behaviour Ecto.Adapter.Queryable
 
-  alias EctoS3.{ContentType, Path, UnsupportedOperationError}
+  alias EctoS3.{ContentType, Path, UnsupportedOperationError, Utils}
 
   @impl true
   def prepare(:all, query) do
@@ -46,39 +46,62 @@ defmodule EctoS3.Adapter.Queryable do
   end
 
   @impl true
-  def execute(adapter_meta, %{select: %{from: from}}, {:nocache, _query}, [id], options) do
+  def execute(adapter_meta, %{select: %{from: from}}, {:nocache, query}, params, options) do
     %{bucket: bucket, format: format, repo: _repo} = adapter_meta
-    {:any, {:source, {_source, schema_module}, nil, fields}} = from
+    {:any, {:source, {_source, schema_module}, nil, select_fields}} = from
 
-    path = Path.absolute(schema_module, id, format, options[:path_prefix])
+    fields = prepare_fields!(query, params)
+    path_format = Utils.get_option(:path_format, options, adapter_meta)
+    path = Path.construct(schema_module, fields, format, path_format)
     request = ExAws.S3.get_object(bucket, path)
 
     case ExAws.request(request)  do
       {:ok, %{body: body}} ->
-        {1, [ContentType.decode(format, body, fields)]}
+        {1, [ContentType.decode(format, body, select_fields)]}
       {:error, {:http_error, 404, _body}} ->
         {0, []}
     end
   end
 
   def execute(_adapter_meta, _query_meta, _query_cache, _params, _options) do
+    raise_queryable_error()
+  end
+
+  @impl true
+  def stream(_adapter_meta, _query_meta, _query_cache, _params, _options) do
+    raise UnsupportedOperationError, message: """
+      EctoS3 does not support Ecto's Stream operations
+    """
+  end
+
+  defp prepare_fields!(query, params)
+  defp prepare_fields!(%Ecto.Query{wheres: [%Ecto.Query.BooleanExpr{expr: {:and, _, fields}}]}, params) do
+    fields = Enum.map(fields, fn {:==, [], [{{:., [], [{:&, [], [_index]}, field_name]}, [], []}, _rhs]} -> field_name end)
+
+    if length(fields) != length(params) do
+      raise "Fields did not match Params"
+    end
+
+    Enum.zip(fields, params)
+  rescue
+    _ -> raise_queryable_error()
+  end
+
+  defp raise_queryable_error() do
     raise UnsupportedOperationError, message: """
       EctoS3 does not support Ecto's Queryable operations
 
       S3 has basic read, write, and delete operations, but no way to construct
       complex queries.
 
-      Because of this the only query operation that is supported is the
-      MyRepo.get/2 function, which fetches by the primary key:
+      Because of this the only query operations that are supported are the
+      MyRepo.get/2 and MyRepo.get_by/3 functions.
+
+      When using MyRepo.get/2 the primary key will be used from the schema.
+
+      Using MyRepo.get_by/3 is only allowed when <something about multiple values in the S3 path>.
 
         MyRepo.get(MyModule, id)
       """
-  end
-
-  @impl true
-  def stream(_adapter_meta, _query_meta, _query_cache, _params, _options) do
-    raise UnsupportedOperationError, message: """
-    EctoS3 does not support Ecto's Stream operations
-    """
   end
 end

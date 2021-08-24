@@ -23,7 +23,7 @@ defmodule EctoS3.MixProject do
 
   defp deps do
     [
-      {:ecto, "~> 3.6"},
+      {:ecto, git: "git@github.com:elixir-ecto/ecto.git", tag: "cc75abde90dbeea29e51611f530e2de768d48c69", override: true},
       {:ex_aws, "~> 2.2"},
       {:ex_aws_s3, "~> 2.2"},
       {:jason, "~> 1.2"},

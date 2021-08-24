@@ -14,23 +14,69 @@ defmodule EctoS3.AdapterTest do
     :ok
   end
 
-  describe "insert" do
+  describe "storage paths" do
     test "uses the schema name for the folder name and the id for the file name" do
       struct = %Person{id: 1, name: "tyler", age: 100}
+
+      # Insert
       S3Repo.insert(struct)
       assert_s3_exists "/people/1.json"
+
+      # Get
+      assert %Person{} = S3Repo.get(Person, 1)
+
+      # Delete
+      S3Repo.delete(struct)
+      assert_s3_not_exists "/people/1.json"
     end
 
-    test "the :path_prefix option prefixes the automatically-generated part of the path" do
-      struct = %Person{id: 1, name: "tyler", age: 100}
+    test ":path_format option (function option) replaces the automatically-generated path" do
+      struct = %Person{id: 2, name: "tyler", age: 100}
+      path_format = "/foo/:other/:age/bar/:id.json"
 
-      # Value as a list
-      S3Repo.insert(struct, [path_prefix: ["accounts", 19]])
-      assert_s3_exists "/accounts/19/people/1.json"
+      # Insert
+      S3Repo.insert(struct, [path_format: path_format])
+      assert_s3_exists "/foo/:other/100/bar/2.json"
 
-      # Value as a single string
-      S3Repo.insert(struct, [path_prefix: "my_prefix"])
-      assert_s3_exists "/accounts/19/people/1.json"
+      # Get
+      assert %Person{} = S3Repo.get_by(Person, [id: 2, age: 100], [path_format: path_format])
+
+      # Delete
+      S3Repo.delete(struct, [path_format: path_format])
+      assert_s3_not_exists "/foo/:other/100/bar/2.json"
+    end
+
+    defmodule Schema_00 do
+      use Ecto.Schema
+      @schema_context path_format: "foo/:food/bar/:id.json"
+      schema "schema_00_name" do
+        field :food, :string
+      end
+    end
+
+    test ":path_format option (schema_context) replaces the automatically-generated path" do
+      struct = %Schema_00{id: 1, food: "pizza"}
+
+      # Insert
+      S3Repo.insert(struct)
+      assert_s3_exists "foo/pizza/bar/1.json"
+
+      # Get
+      assert %Schema_00{} = S3Repo.get(Person, 1, [path_params: [food: "pizza"]])
+
+      # Delete
+      S3Repo.delete(struct)
+      assert_s3_not_exists "foo/pizza/bar/1.json"
+    end
+
+    test ":path_format option raises error when querying and ID is not a keyword list" do
+      assert_raise ArgumentError, fn ->
+        S3Repo.get(Person, 1, [path_format: "/foo/:other/:age/bar/:id.json"])
+      end
+
+      assert_raise ArgumentError, fn ->
+        S3Repo.get(Schema_00, 1)
+      end
     end
 
     defmodule Schema_01 do
@@ -97,21 +143,36 @@ defmodule EctoS3.AdapterTest do
 
     defmodule Schema_04 do
       use Ecto.Schema
+      schema "schema_04_name" do
+        field :count, :integer
+      end
+    end
+
+    test "uses the default id field when one is not specified in the schema" do
+      {:ok, %Schema_04{id: id}} = S3Repo.insert(%Schema_04{count: 11})
+      assert id > 0
+      assert_s3_exists "/schema_04_name/#{id}.json"
+    end
+  end
+
+  describe "insert" do
+    defmodule Schema_05 do
+      use Ecto.Schema
       @primary_key {:custom_id, :binary_id, autogenerate: true}
-      schema "schema_04_name" do end
+      schema "schema_05_name" do end
     end
 
     test "autogenerates a key when required" do
-      struct = %Schema_04{}
+      struct = %Schema_05{}
       assert {:ok, %{custom_id: id}} = S3Repo.insert(struct)
-      assert_s3_exists "/schema_04_name/#{id}.json"
+      assert_s3_exists "/schema_05_name/#{id}.json"
     end
 
     test "does not autogenerate a key when a value is already present" do
       id = Ecto.UUID.generate()
-      struct = %Schema_04{custom_id: id}
+      struct = %Schema_05{custom_id: id}
       assert {:ok, %{custom_id: ^id}} = S3Repo.insert(struct)
-      assert_s3_exists "/schema_04_name/#{id}.json"
+      assert_s3_exists "/schema_05_name/#{id}.json"
     end
 
     test "does not insert invalid changeset" do
@@ -124,16 +185,16 @@ defmodule EctoS3.AdapterTest do
       assert changeset.valid? == false
     end
 
-    defmodule Schema_05 do
+    defmodule Schema_06 do
       use Ecto.Schema
       @primary_key false
-      schema "schema_05_name" do
+      schema "schema_06_name" do
         field :foo, :string
       end
     end
 
     test "raises NoPrimaryKeyFieldError if the schema has no primary key field" do
-      struct = %Schema_05{foo: "bar"}
+      struct = %Schema_06{foo: "bar"}
       assert_raise Ecto.NoPrimaryKeyFieldError, fn ->
         S3Repo.insert(struct)
       end
@@ -156,19 +217,6 @@ defmodule EctoS3.AdapterTest do
       assert_raise EctoS3.UnsupportedOperationError, ~r(not support the :stale_error_field option), fn ->
         S3Repo.insert(%Person{id: 800}, stale_error_field: :name)
       end
-    end
-
-    defmodule Schema_06 do
-      use Ecto.Schema
-      schema "schema_06_name" do
-        field :count, :integer
-      end
-    end
-
-    test "uses the default id field when one is not specified in the schema" do
-      {:ok, %Schema_06{id: id}} = S3Repo.insert(%Schema_06{count: 11})
-      assert id > 0
-      assert_s3_exists "/schema_06_name/#{id}.json"
     end
   end
 
